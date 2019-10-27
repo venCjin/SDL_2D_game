@@ -1,16 +1,11 @@
 #include "Player.h"
-#include <cstdio>
 
-Player::Player(float x, float y, unsigned width, unsigned height, float speed)
-	: x(x), y(y), width(width), height(height), speed(speed)
+Player::Player(float x, float y, unsigned width, unsigned height, float speed, float radius)
+	: x(x), y(y), width(width), height(height), speed(speed), radius(radius)
 {
 }
 
 Player::~Player()
-{
-}
-
-void Player::start()
 {
 }
 
@@ -19,22 +14,31 @@ void Player::update()
 	if (directionX != 0)
 	{
 		x += directionX * speed;
-		// x += directionX;
 	}
-	else
-	{
-	}
-	// epsilon
 
 	if (directionY != 0)
 	{
 		y += directionY * speed;
-		// y += directionY;
 	}
-	else
-	{
-	}
-	//epsilon
+}
+
+void Player::render(SDL_Rect* cam, SDL_Renderer* renderer)
+{
+	/* PLAYER 1*/
+	// renderTexture(player, renderer, p1.x, p1.y, p1.width, p1.height);
+	SDL_Rect fillRect = { x - radius - cam->x, y - radius - cam->y, radius*2, radius*2 };
+	SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+	SDL_RenderFillRect(renderer, &fillRect);
+	/* PLAYER 1*/
+}
+
+bool Player::inLevelBounds(int lvl_w, int lvl_h)
+{
+	if (x + directionX * speed > radius
+		&& y + directionY * speed > radius
+		&& x + directionX * speed < lvl_w - radius
+		&& y + directionY * speed < lvl_h - radius) return true;
+	else return false;
 }
 
 /*
@@ -59,17 +63,22 @@ void Player::moveY(int direction_y)
 	directionY = direction_y;
 }
 
-int Player::distance(Player& p2)
+int Player::distanceX(Player &p2) const
 {
-	int dx = x + directionX - p2.x;
-	int dy = y + directionY - p2.y;
-	return sqrt(dx*dx + dy*dy);
+	return abs(x + (directionX * speed) - p2.x);
+}
+
+int Player::distanceY(Player &p2) const
+{
+	return abs(y + (directionY * speed) - p2.y);
 }
 
 
 
-SmoothPlayer::SmoothPlayer(float x, float y, unsigned width, unsigned height, float speed)
-	: Player(x, y, width, height, speed)
+/*  SMOOTH  */
+
+SmoothPlayer::SmoothPlayer(float x, float y, unsigned width, unsigned height, float speed, float radius)
+	: Player(x, y, width, height, speed, radius)
 {
 }
 
@@ -123,4 +132,11 @@ void SmoothPlayer::update()
 			}
 		}
 	}
+}
+
+void SmoothPlayer::render(SDL_Rect* cam, SDL_Renderer* renderer)
+{
+	/* PLAYER 2*/
+	ResourceManager::drawCircle(renderer, x - cam->x, y - cam->y, radius, 255, 0, 0, 127);
+	/* PLAYER 2*/
 }

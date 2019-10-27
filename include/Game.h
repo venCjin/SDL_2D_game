@@ -8,13 +8,13 @@
 #include "GameLog.h"
 #include "ResourceManager.h"
 #include "Player.h"
+#include "Camera.h"
+#include "Map.h"
 
 // TODO controllers class
 const int JOYSTICK_DEAD_ZONE = 8000;
-// TODO map class
-const int TILE_SIZE = 64;
-
-const int playersMaxDistance = 400;
+const int lvl_w = 3072;
+const int lvl_h = 2048;
 
 class Game
 {
@@ -38,17 +38,15 @@ private:
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 
-	// TODO export to other class
-	SDL_Texture* background = nullptr;
-	SDL_Texture* player = nullptr;
-
-	// TODO controllers class
 	SDL_GameController* gameController = nullptr;
-	SDL_Joystick* joy = nullptr;
 
 	// TODO players
-	SmoothPlayer p1 = SmoothPlayer(0, 0, 32, 32, 0.1);
-	Player p2 = Player(20, 20, 32, 32, 0.1);
+	SmoothPlayer* p1 = nullptr;
+	Player* p2 = nullptr;
+
+	// Camera* cam = nullptr;
+	SDL_Rect* cam = nullptr;
+	Map* map = nullptr;
 };
 
 #endif

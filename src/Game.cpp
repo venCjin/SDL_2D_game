@@ -3,6 +3,8 @@
 
 Game::Game(std::ostream& log, int width, int height) : log(log), width(width), height(height)
 {
+	p1 = new SmoothPlayer(300, 300, 32, 32, 0.1f, 25);
+	p2 = new Player(200, 200, 32, 32, 0.1f,25);
 }
 
 Game::~Game()
@@ -33,7 +35,7 @@ void Game::init(const char *title, bool fullscreen)
 		return;
 	}
 
-	renderer = SDL_CreateRenderer(window, -1, 0 | SDL_RENDERER_ACCELERATED /*| SDL_RENDERER_PRESENTVSYNC*/);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED /*| SDL_RENDERER_PRESENTVSYNC*/);
 	if (renderer == nullptr)
 	{
 		GameLog::logSDLError(log, "CreateRenderer");
@@ -55,16 +57,15 @@ void Game::init(const char *title, bool fullscreen)
 	}
 
 	// Load assets
-	background = ResourceManager::loadTexture(resPath + "/images/stone_tile@128.png", renderer);
-	player = ResourceManager::loadTexture(resPath + "/images/player@128.png", renderer);
-	//Make sure they both loaded ok
-	if (background == nullptr || player == nullptr)
+	map = new Map(lvl_w, lvl_h, renderer);
+	if (!map->init())
 	{
-		SDL_SetError("Textures didn't load!");
-		GameLog::logSDLError(log, "Video");
+		GameLog::logSDLError(log, "Map");
 		return;
 	}
 
+	cam = new SDL_Rect{ 0, 0, width, height };
+	
 	// Controllers init
 	if (SDL_NumJoysticks() < 1)
 	{
@@ -84,15 +85,8 @@ void Game::init(const char *title, bool fullscreen)
 		}
 		else
 		{
-			// std::cerr << "Warning: Joystick is not supported by the game controller interface!" << std::endl;
 			SDL_SetError("Your GameController is not supported by the game controller interface!");
 			GameLog::logSDLError(log, "GameController");
-
-			joy = SDL_JoystickOpen(0);
-			if (joy == nullptr)
-				GameLog::logSDLError(log, "Unable to open joystick!");
-			else
-				log << "Joystick connected!" << std::endl;
 		}
 	}
 	
@@ -116,19 +110,19 @@ void Game::handleEvents()
 		{
 		case SDLK_UP:
 			// p1.moveY(-32767);
-			p1.moveY(-1.0f);
+			p1->moveY(-1.0f);
 			break;
 		case SDLK_DOWN:
 			// p1.moveY(32768);
-			p1.moveY(1.0f);
+			p1->moveY(1.0f);
 			break;
 		case SDLK_LEFT:
 			// p1.moveX(-32768);
-			p1.moveX(-1.0f);
+			p1->moveX(-1.0f);
 			break;
 		case SDLK_RIGHT:
 			// p1.moveX(32767);
-			p1.moveX(1.0f);
+			p1->moveX(1.0f);
 			break;
 		case SDLK_ESCAPE:
 			isRunning = false;
@@ -142,16 +136,16 @@ void Game::handleEvents()
 		switch (e.key.keysym.sym)
 		{
 		case SDLK_UP:
-			p1.moveY(0.0f);
+			p1->moveY(0.0f);
 			break;
 		case SDLK_DOWN:
-			p1.moveY(0.0f);
+			p1->moveY(0.0f);
 			break;
 		case SDLK_LEFT:
-			p1.moveX(0.0f);
+			p1->moveX(0.0f);
 			break;
 		case SDLK_RIGHT:
-			p1.moveX(0.0f);
+			p1->moveX(0.0f);
 			break;
 		default:
 			break;
@@ -162,35 +156,35 @@ void Game::handleEvents()
 		/*if (e.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX)
 		{
 			if (abs(e.jaxis.value) > JOYSTICK_DEAD_ZONE)
-				p2.moveX(e.jaxis.value);
+				p2->moveX(e.jaxis.value);
 			else
-				p2.moveX(0);
+				p2->moveX(0);
 		}
 		if (e.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
 		{
 			if (abs(e.jaxis.value) > JOYSTICK_DEAD_ZONE)
-				p2.moveY(e.jaxis.value);
+				p2->moveY(e.jaxis.value);
 			else
-				p2.moveY(0);
+				p2->moveY(0);
 		}
 		break;*/
 		if (e.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX)
 		{
 			if (e.jaxis.value > JOYSTICK_DEAD_ZONE)
-				p2.moveX(1.0f);
+				p2->moveX(1.0f);
 			else if (e.jaxis.value < -JOYSTICK_DEAD_ZONE)
-				p2.moveX(-1.0f);
+				p2->moveX(-1.0f);
 			else
-				p2.moveX(0.0f);
+				p2->moveX(0.0f);
 		}
 		if (e.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
 		{
 			if (e.jaxis.value > JOYSTICK_DEAD_ZONE)
-				p2.moveY(1.0f);
+				p2->moveY(1.0f);
 			else if (e.jaxis.value < -JOYSTICK_DEAD_ZONE)
-				p2.moveY(-1.0f);
+				p2->moveY(-1.0f);
 			else
-				p2.moveY(0.0f);
+				p2->moveY(0.0f);
 		}
 		break;
 
@@ -201,11 +195,36 @@ void Game::handleEvents()
 
 void Game::update()
 {
-	if (p1.distance(p2) < playersMaxDistance)
-		p1.update();
-	
-	if (p2.distance(p1) < playersMaxDistance)
-		p2.update();
+	// ograniczenie ruchu graczy (nie wyjda za kadr)
+	if (p1->distanceX(*p2) < width-50
+		&& p1->distanceY(*p2) < height-50
+		&& p1->inLevelBounds(lvl_w, lvl_h))
+		p1->update();
+	if (p2->distanceX(*p1) < width-50
+		&& p2->distanceY(*p1) < height-50
+		&& p2->inLevelBounds(lvl_w, lvl_h))
+		p2->update();
+
+	//Center the camera over the dot
+	cam->x = (p1->x + p2->x) / 2 - width / 2;
+	cam->y = (p1->y + p2->y) / 2 - height / 2;
+	//Keep the camera in lvl bounds
+	if (cam->x < 0)
+	{
+		cam->x = 0;
+	}
+	if (cam->y < 0)
+	{
+		cam->y = 0;
+	}
+	if (cam->x > lvl_w - cam->w)
+	{
+		cam->x = lvl_w - cam->w;
+	}
+	if (cam->y > lvl_h - cam->h)
+	{
+		cam->y = lvl_h - cam->h;
+	}
 }
 
 void Game::render()
@@ -214,29 +233,11 @@ void Game::render()
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-/* BACKGROUND*/
-	// renderTexture(background, renderer, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	for (int i = 0; i < width; i += TILE_SIZE)
-	{
-		for (int j = 0; j < height; j += TILE_SIZE)
-		{
-			ResourceManager::renderTexture(background, renderer, i, j, TILE_SIZE, TILE_SIZE);
-		}
-	}
-/* BACKGROUND*/
+	map->render(cam);
 	
-/* PLAYER 1*/
-	// renderTexture(player, renderer, p1.x, p1.y, p1.width, p1.height);
-	//Render red filled quad
-	SDL_Rect fillRect = { p1.x - 25, p1.y - 25, 50, 50 };
-	SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-	SDL_RenderFillRect(renderer, &fillRect);
-/* PLAYER 1*/
-
-/* PLAYER 2*/
-	// renderTexture(player, renderer, p2.x, p2.y, p2.width, p2.height);
-	ResourceManager::drawCircle(renderer, p2.x, p2.y, 20, 255, 0, 0, 127);
-/* PLAYER 2*/
+	p1->render(cam, renderer);
+	
+	p2->render(cam, renderer);
 	
 	SDL_RenderPresent(renderer);
 }
@@ -248,7 +249,8 @@ bool Game::running()
 
 void Game::close()
 {
-	cleanup(window, renderer , background, player/*other resources*/);
+	map->close();
+	cleanup(window, renderer , gameController/*, background, playerother resources*/);
 
 	//Quit SDL subsystems
 	IMG_Quit();
