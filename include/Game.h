@@ -47,8 +47,8 @@ private:
 	SDL_Joystick* joy = nullptr;
 
 	// TODO players
-	SmoothPlayer p1 = SmoothPlayer(0, 0, 32, 32, 2.2);
-	Player p2 = Player(20, 20, 32, 32, 2.2);
+	SmoothPlayer p1 = SmoothPlayer(0, 0, 32, 32, 0.1);
+	Player p2 = Player(20, 20, 32, 32, 0.1);
 };
 
 #endif

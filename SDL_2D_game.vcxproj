@@ -151,7 +151,6 @@
     <ClInclude Include="include\GameLog.h" />
     <ClInclude Include="include\Player.h" />
     <ClInclude Include="include\ResourceManager.h" />
-    <ClInclude Include="include\res_path.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Game.cpp" />

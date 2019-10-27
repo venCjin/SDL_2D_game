@@ -21,9 +21,6 @@
     <ClInclude Include="include\cleanup.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="include\res_path.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
     <ClInclude Include="include\Player.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
