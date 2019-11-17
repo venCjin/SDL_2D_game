@@ -13,7 +13,6 @@ class ResourceManager
 public:
 	ResourceManager();
 	~ResourceManager();
-
 	static SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren);
 	static void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, SDL_Rect dst, SDL_Rect* clip);
 	static void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, int w, int h);

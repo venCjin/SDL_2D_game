@@ -1,7 +1,8 @@
 #include "Player.h"
+#include "Map.h"
 
-Player::Player(float x, float y, unsigned width, unsigned height, float speed, float radius)
-	: x(x), y(y), width(width), height(height), speed(speed), radius(radius)
+Player::Player(float x, float y, /*unsigned width, unsigned height,*/ float speed, float radius)
+	: x(x), y(y), /*width(width), height(height),*/ speed(speed), radius(radius)
 {
 }
 
@@ -22,6 +23,19 @@ void Player::update()
 	}
 }
 
+void Player::revertUpdate()
+{
+	if (directionX != 0)
+	{
+		x -= directionX * speed;
+	}
+
+	if (directionY != 0)
+	{
+		y -= directionY * speed;
+	}
+}
+
 void Player::render(SDL_Rect* cam, SDL_Renderer* renderer)
 {
 	/* PLAYER 1*/
@@ -32,13 +46,69 @@ void Player::render(SDL_Rect* cam, SDL_Renderer* renderer)
 	/* PLAYER 1*/
 }
 
-bool Player::inLevelBounds(int lvl_w, int lvl_h)
+bool Player::outOfLevelBounds(int lvl_w, int lvl_h)
 {
-	if (x + directionX * speed > radius
-		&& y + directionY * speed > radius
-		&& x + directionX * speed < lvl_w - radius
-		&& y + directionY * speed < lvl_h - radius) return true;
+	if (x < radius
+		&& y < radius
+		&& x > lvl_w - radius
+		&& y > lvl_h - radius) return true;
 	else return false;
+}
+
+bool Player::checkCollision(SDL_Rect a, SDL_Rect b)
+{
+	//The sides of the rectangles
+	int leftA, leftB;
+	int rightA, rightB;
+	int topA, topB;
+	int bottomA, bottomB;
+
+	//Calculate the sides of rect A
+	leftA = a.x;
+	rightA = a.x + a.w;
+	topA = a.y;
+	bottomA = a.y + a.h;
+
+	//Calculate the sides of rect B
+	leftB = b.x;
+	rightB = b.x + b.w;
+	topB = b.y;
+	bottomB = b.y + b.h;
+
+	//If any of the sides from A are outside of B
+	if (bottomA <= topB)
+	{
+		return false;
+	}
+
+	if (topA >= bottomB)
+	{
+		return false;
+	}
+
+	if (rightA <= leftB)
+	{
+		return false;
+	}
+
+	if (leftA >= rightB)
+	{
+		return false;
+	}
+
+	//If none of the sides from A are outside B
+	return true;
+}
+
+bool Player::checkCollision(SDL_Rect b)
+{
+	return checkCollision(SDL_Rect{
+		(int)(x - radius),
+		(int)(y - radius),
+		(int)(radius * 2),
+		(int)(radius * 2)
+		},
+		b);
 }
 
 /*
@@ -65,20 +135,20 @@ void Player::moveY(int direction_y)
 
 int Player::distanceX(Player &p2) const
 {
-	return abs(x + (directionX * speed) - p2.x);
+	return abs(x - p2.x);
 }
 
 int Player::distanceY(Player &p2) const
 {
-	return abs(y + (directionY * speed) - p2.y);
+	return abs(y - p2.y);
 }
 
 
 
 /*  SMOOTH  */
 
-SmoothPlayer::SmoothPlayer(float x, float y, unsigned width, unsigned height, float speed, float radius)
-	: Player(x, y, width, height, speed, radius)
+SmoothPlayer::SmoothPlayer(float x, float y, /*unsigned width, unsigned height,*/ float speed, float radius)
+	: Player(x, y, /*width, height,*/ speed, radius)
 {
 }
 
@@ -134,9 +204,69 @@ void SmoothPlayer::update()
 	}
 }
 
+void SmoothPlayer::revertUpdate()
+{
+	if (directionX != 0)
+	{
+		x -= directionX * speed;
+	}
+	lastDirectionX = 0.0f;
+	
+	if (directionY != 0)
+	{
+		y -= directionY * speed;
+	}
+	lastDirectionY = 0.0f;
+}
+
 void SmoothPlayer::render(SDL_Rect* cam, SDL_Renderer* renderer)
 {
 	/* PLAYER 2*/
 	ResourceManager::drawCircle(renderer, x - cam->x, y - cam->y, radius, 255, 0, 0, 127);
 	/* PLAYER 2*/
+}
+
+bool SmoothPlayer::checkCollision(SDL_Rect b)
+{
+	//Closest point on collision box
+    int cX, cY;
+
+    //Find closest x offset
+    if( x < b.x )
+    {
+        cX = b.x;
+    }
+    else if( x > b.x + b.w )
+    {
+        cX = b.x + b.w;
+    }
+    else
+    {
+        cX = x;
+    }
+
+	//Find closest y offset
+	if (y < b.y)
+	{
+		cY = b.y;
+	}
+	else if (y > b.y + b.h)
+	{
+		cY = b.y + b.h;
+	}
+	else
+	{
+		cY = y;
+	}
+
+	//If the closest point is inside the circle
+	
+	if ((x - cX) * (x - cX) + (y - cY) * (y - cY) < radius * radius)
+	{
+		//This box and the circle have collided
+		return true;
+	}
+
+	//If the shapes have not collided
+	return false;
 }

@@ -13,8 +13,9 @@ int main(int argc, char **argv)
 		game->render();
 	}
 
+	system("PAUSE");
 	game->close();
-	// system("PAUSE");
+	
 	return 0;
 }
 

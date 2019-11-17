@@ -35,3 +35,8 @@
 .vs
 Debug/
 Release/
+
+# others
+*.rar
+*.zip
+*.7z

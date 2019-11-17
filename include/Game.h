@@ -11,10 +11,7 @@
 #include "Camera.h"
 #include "Map.h"
 
-// TODO controllers class
 const int JOYSTICK_DEAD_ZONE = 8000;
-const int lvl_w = 3072;
-const int lvl_h = 2048;
 
 class Game
 {
@@ -24,6 +21,8 @@ public:
 
 	void init(const char* title, bool fullscreen);
 	void handleEvents();
+	
+	// bool checkCollision(Circle a, SDL_Rect b)
 	void update();
 	void render();
 	bool running();
@@ -40,7 +39,6 @@ private:
 
 	SDL_GameController* gameController = nullptr;
 
-	// TODO players
 	SmoothPlayer* p1 = nullptr;
 	Player* p2 = nullptr;
 

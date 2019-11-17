@@ -5,8 +5,9 @@
 #include <cstdio>
 #include <SDL.h>
 #include "ResourceManager.h"
+#include "Tile.h"
 
-class Player
+class Player // rect
 {
 private:
 	// float directionX = 0.0f; // zakres od -1 do 1
@@ -14,17 +15,20 @@ private:
 
 public:
 	float speed, radius;
-	float directionX = 0;
-	float directionY = 0;
+	float directionX = 0.0f;
+	float directionY = 0.0f;
 	float x, y;
-	unsigned width, height;
+	/*unsigned width, height;*/
 
-	Player(float x, float y, unsigned width, unsigned height, float speed, float radius);
-	~Player();
+	Player(float x, float y, /*unsigned width, unsigned height,*/ float speed, float radius);
+	virtual ~Player();
 
 	virtual void update();
+	virtual void revertUpdate();
 	virtual void render(SDL_Rect* cam, SDL_Renderer* renderer);
-	bool inLevelBounds(int lvl_w, int lvl_h);
+	bool outOfLevelBounds(int lvl_w, int lvl_h);
+	static bool checkCollision(SDL_Rect a, SDL_Rect b);
+	virtual bool checkCollision(SDL_Rect b);
 	// void moveX(float direction_x);
 	// void moveY(float direction_y);
 	void moveX(int direction_x);
@@ -33,20 +37,18 @@ public:
 	int distanceY(Player &p2) const;
 };
 
-#endif
-
-#ifndef SMOOTH_PLAYER_H
-#define SMOOTH_PLAYER_H
-class SmoothPlayer : public Player
+class SmoothPlayer : public Player // circle
 {
 public:
-	SmoothPlayer(float x, float y, unsigned width, unsigned height, float speed, float radius);
+	SmoothPlayer(float x, float y, /*unsigned width, unsigned height,*/ float speed, float radius);
 
 	float lastDirectionX = 0.0f;
 	float lastDirectionY = 0.0f;
-	const float epsilon = 0.004f;
+	const float epsilon = 0.002f;
 	void update() override;
+	void revertUpdate() override;
 	void render(SDL_Rect* cam, SDL_Renderer* renderer) override;
+	bool checkCollision(SDL_Rect b) override;
 };
 
 #endif
