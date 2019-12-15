@@ -4,7 +4,7 @@ Game* game = new Game(std::cout);
 
 int main(int argc, char **argv)
 {
-	game->init("Zad1", false);
+	game->init("Zad2", false);
 	
 	while (game->running())
 	{

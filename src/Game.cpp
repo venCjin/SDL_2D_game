@@ -84,8 +84,8 @@ void Game::init(const char *title, bool fullscreen)
 			gameController = SDL_GameControllerOpen(0);
 			if (gameController == nullptr)
 				GameLog::logSDLError(log, "Unable to open game controller!");
-			else
-				log << "GameController connected!" << std::endl;
+			// else
+				// log << "GameController connected!" << std::endl;
 		}
 		else
 		{
