@@ -216,7 +216,7 @@ void Map::close()
 	//Deallocate tiles
 	for (int i = 0; i < TOTAL_TILES; ++i)
 	{
-		if (tiles[i] == nullptr)
+		if (tiles[i] != nullptr)
 		{
 			delete tiles[i];
 			tiles[i] = nullptr;
