@@ -1,10 +1,10 @@
 #include "Game.h"
 
-Game* game = new Game(std::cout);
-
 int main(int argc, char **argv)
 {
-	game->init("Zad2", false);
+	Game* game = new Game(std::cout);
+
+	game->init("Zad3", false);
 	
 	while (game->running())
 	{
@@ -13,7 +13,6 @@ int main(int argc, char **argv)
 		game->render();
 	}
 
-	system("PAUSE");
 	game->close();
 	
 	return 0;

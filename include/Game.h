@@ -10,19 +10,17 @@
 #include "Player.h"
 #include "Camera.h"
 #include "Map.h"
-
-const int JOYSTICK_DEAD_ZONE = 8000;
+#include "Layer.h"
 
 class Game
 {
 public:
 	Game(std::ostream& log, int width = 640, int height = 480);
-	~Game();
+	~Game() = default;
 
 	void init(const char* title, bool fullscreen);
 	void handleEvents();
 	
-	// bool checkCollision(Circle a, SDL_Rect b)
 	void update();
 	void render();
 	bool running();
@@ -37,10 +35,10 @@ private:
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 
-	SDL_GameController* gameController = nullptr;
+	Layer* bg = nullptr;
+	Layer* fg = nullptr;
 
-	SmoothPlayer* p1 = nullptr;
-	Player* p2 = nullptr;
+	Player* p1 = nullptr;
 
 	// Camera* cam = nullptr;
 	SDL_Rect* cam = nullptr;

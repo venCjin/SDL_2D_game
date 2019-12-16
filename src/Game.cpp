@@ -1,11 +1,8 @@
 #include "Game.h"
 
 
-Game::Game(std::ostream& log, int width, int height) : log(log), width(width), height(height)
-{
-}
-
-Game::~Game()
+Game::Game(std::ostream& log, int width, int height)
+: log(log), width(width), height(height)
 {
 }
 
@@ -19,8 +16,7 @@ void Game::init(const char *title, bool fullscreen)
 		flags = SDL_WINDOW_FULLSCREEN;
 	}
 
-	// if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER /*SDL_INIT_JOYSTICK*/) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		GameLog::logSDLError(log, "SDL_Init");
 		return;
@@ -33,7 +29,7 @@ void Game::init(const char *title, bool fullscreen)
 		return;
 	}
 
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED /*| SDL_RENDERER_PRESENTVSYNC*/);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	if (renderer == nullptr)
 	{
 		GameLog::logSDLError(log, "CreateRenderer");
@@ -55,44 +51,21 @@ void Game::init(const char *title, bool fullscreen)
 	}
 
 	// Load assets
-	map = new Map(LEVEL_WIDTH, LEVEL_HEIGHT, renderer);
-	if (!map->init())
+	map = new Map();
+	if (!map->init(renderer))
 	{
 		GameLog::logSDLError(log, "Map");
 		return;
 	}
 
-	// players after map
-	int x, y;
-	map->genStartPoint(x, y);
-	p1 = new SmoothPlayer(x-5, y-5, /*32, 32,*/ 0.2f, 15);
-	p2 = new Player(x+5, y+5, /*32, 32,*/ 0.2f, 15);
-	
+	p1 = new Player(32, 256, /*32, 32,*/ 0.2f, 15);
+
 	cam = new SDL_Rect{ 0, 0, width, height };
 	
-	// Controllers init
-	if (SDL_NumJoysticks() < 1)
-	{
-		SDL_SetError("No joysticks connected!"); 
-		GameLog::logSDLError(log, "GameController");
-	}
-	else
-	{
-		if (SDL_IsGameController(0))
-		{
-			//Load Game Controller
-			gameController = SDL_GameControllerOpen(0);
-			if (gameController == nullptr)
-				GameLog::logSDLError(log, "Unable to open game controller!");
-			// else
-				// log << "GameController connected!" << std::endl;
-		}
-		else
-		{
-			SDL_SetError("Your GameController is not supported by the game controller interface!");
-			GameLog::logSDLError(log, "GameController");
-		}
-	}
+	// Load bg
+	bg = new Layer(0.05f, "/images/bg.png", cam, renderer);
+	// Load fg
+	fg = new Layer(0.6f, "/images/fg3.png", cam, renderer);
 	
 	isRunning = true;
 }
@@ -113,20 +86,21 @@ void Game::handleEvents()
 		switch (e.key.keysym.sym)
 		{
 		case SDLK_UP:
-			// p1.moveY(-32767);
 			p1->moveY(-1.0f);
+			// p1->jump(-1.0f);
 			break;
 		case SDLK_DOWN:
-			// p1.moveY(32768);
 			p1->moveY(1.0f);
 			break;
 		case SDLK_LEFT:
-			// p1.moveX(-32768);
+			bg->moveX(-1.0f);
 			p1->moveX(-1.0f);
+			fg->moveX(-1.0f);
 			break;
 		case SDLK_RIGHT:
-			// p1.moveX(32767);
+			bg->moveX(1.0f);
 			p1->moveX(1.0f);
+			fg->moveX(1.0f);
 			break;
 		case SDLK_ESCAPE:
 			isRunning = false;
@@ -141,106 +115,57 @@ void Game::handleEvents()
 		{
 		case SDLK_UP:
 			p1->moveY(0.0f);
+			// p1->jump(0.0f);
 			break;
 		case SDLK_DOWN:
 			p1->moveY(0.0f);
 			break;
 		case SDLK_LEFT:
+			bg->moveX(0.0f);
 			p1->moveX(0.0f);
+			fg->moveX(0.0f);
 			break;
 		case SDLK_RIGHT:
+			bg->moveX(0.0f);
 			p1->moveX(0.0f);
+			fg->moveX(0.0f);
 			break;
 		default:
 			break;
 		}
-		break;
-
-	case SDL_CONTROLLERAXISMOTION:
-		/*if (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
-		{
-			if (abs(e.jaxis.value) > JOYSTICK_DEAD_ZONE)
-				p2->moveX(e.jaxis.value);
-			else
-				p2->moveX(0);
-		}
-		if (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
-		{
-			if (abs(e.jaxis.value) > JOYSTICK_DEAD_ZONE)
-				p2->moveY(e.jaxis.value);
-			else
-				p2->moveY(0);
-		}
-		break;*/
-		if (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
-		{
-			if (e.jaxis.value > JOYSTICK_DEAD_ZONE)
-				p2->moveX(1.0f);
-			else if (e.jaxis.value < -JOYSTICK_DEAD_ZONE)
-				p2->moveX(-1.0f);
-			else
-				p2->moveX(0.0f);
-		}
-		if (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
-		{
-			if (e.jaxis.value > JOYSTICK_DEAD_ZONE)
-				p2->moveY(1.0f);
-			else if (e.jaxis.value < -JOYSTICK_DEAD_ZONE)
-				p2->moveY(-1.0f);
-			else
-				p2->moveY(0.0f);
-		}
-		break;
-
-	default:
 		break;
 	}
 }
 
 void Game::update()
 {
-	if(map->isWin(*p1))
-		isRunning = false;
-	
-	if (map->isWin(*p2))
-		isRunning = false;
-	
-	// ograniczenie ruchu graczy (nie wyjda za kadr)
+	bg->update();
 	p1->update();
-	if (p1->distanceX(*p2) > width - (p1->radius + p2->radius)
-		|| p1->distanceY(*p2) > height - (p1->radius + p2->radius)
-		|| p1->outOfLevelBounds(LEVEL_WIDTH, LEVEL_HEIGHT)
-		|| map->touchesWall(*p1)
-		)
+	fg->update();
+		
+	if (map->touchesGrass(*p1))
+	{
+		bg->revertUpdate();
 		p1->revertUpdate();
+		fg->revertUpdate();
+	}
+		
 
-	p2->update();
-	if (p2->distanceX(*p1) > width - (p1->radius + p2->radius)
-		|| p2->distanceY(*p1) > height - (p1->radius + p2->radius)
-		|| p2->outOfLevelBounds(LEVEL_WIDTH, LEVEL_HEIGHT)
-		|| map->touchesWall(*p2)
-		)
-		p2->revertUpdate();
-
-	//Center the camera between players
-	cam->x = (p1->x + p2->x) / 2 - width / 2;
-	cam->y = (p1->y + p2->y) / 2 - height / 2;
-	//Keep the camera in lvl bounds
-	if (cam->x < 0)
+	// cam and player pos
+	cam->x = p1->x - 32;
+	if ( cam->x > 640 )
 	{
+		// printf("cam: %i %i\n", cam->x, cam->y);
+		// printf("p1: %f %f\n", p1->x, p1->y);
 		cam->x = 0;
+		p1->x = 32;
 	}
-	if (cam->y < 0)
+	else if ( cam->x < 0 )
 	{
-		cam->y = 0;
-	}
-	if (cam->x > LEVEL_WIDTH - cam->w)
-	{
-		cam->x = LEVEL_WIDTH - cam->w;
-	}
-	if (cam->y > LEVEL_HEIGHT - cam->h)
-	{
-		cam->y = LEVEL_HEIGHT - cam->h;
+		// printf("cam: %i %i\n", cam->x, cam->y);
+		// printf("p1: %f %f\n", p1->x, p1->y);
+		cam->x = 640;
+		p1->x = 640 + 32;
 	}
 }
 
@@ -251,14 +176,17 @@ void Game::render()
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-	map->render(cam);
-	
-	p1->render(cam, renderer);
-	
-	p2->render(cam, renderer);
+	// Background
+	bg->render(renderer);
 
-	// hint to win
-	map->showDirection(cam);
+	// Map
+	map->render(cam, renderer);
+
+	// Player
+	p1->render(cam, renderer);
+
+	// Foreground
+	fg->render(renderer);
 	
 	SDL_RenderPresent(renderer);
 }
@@ -271,11 +199,11 @@ bool Game::running()
 void Game::close()
 {
 	map->close();
-	cleanup(window, renderer , gameController/*, background, player, other resources*/);
+	bg->close();
+	fg->close();
+	cleanup(window, renderer);
 
 	//Quit SDL subsystems
 	IMG_Quit();
 	SDL_Quit();
 }
-
-

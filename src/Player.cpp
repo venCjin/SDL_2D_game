@@ -111,18 +111,6 @@ bool Player::checkCollision(SDL_Rect b)
 		b);
 }
 
-/*
-void Player::moveX(float direction_x)
-{
-	directionX = direction_x / 32767.0f;
-}
-
-void Player::moveY(float direction_y)
-{
-	directionY = direction_y / 32767.0f;
-}
-*/
-
 void Player::moveX(int direction_x)
 {
 	directionX = direction_x;
@@ -158,7 +146,7 @@ void SmoothPlayer::update()
 	if (directionX != 0)
 	{
 		x += directionX * speed;
-		lastDirectionX = directionX;
+		// lastDirectionX = directionX;
 	}
 	else
 	{
@@ -182,7 +170,7 @@ void SmoothPlayer::update()
 	if (directionY != 0)
 	{
 		y += directionY * speed;
-		lastDirectionY = directionY;
+		// lastDirectionY = directionY;
 	}
 	else
 	{
